@@ -6,7 +6,9 @@ A Telegram bot that generates strong opposing replies to political messages usin
 
 1. Someone posts a political message in a group chat.
 2. Another user **replies** to that message and **@mentions** the bot (e.g. `@YourBotUsername`).
-3. The bot reads the original message, sends it to OpenAI with a system prompt, and posts a fierce counter-argument as a reply.
+3. The bot reads the **original message** (not the reply), sends it to OpenAI with a system prompt, and posts a fierce counter-argument as a reply to the **original message**.
+
+For detailed workflow explanation with examples and logs, see [HOW_IT_WORKS.md](./HOW_IT_WORKS.md).
 
 ## Setup
 

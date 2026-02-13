@@ -71,7 +71,7 @@ export function createBot(token: string): Bot {
 
   // ── Main handler: reply + mention → generate opposing argument ────
   bot.on("message", async (ctx) => {
-    console.log("Received message:", {
+    console.log("📨 Received message:", {
       messageId: ctx.message.message_id,
       chatId: ctx.chat?.id,
       chatType: ctx.chat?.type,
@@ -81,17 +81,25 @@ export function createBot(token: string): Bot {
     });
 
     if (!isBotMentionedInReply(ctx)) {
-      console.log("Bot not mentioned in reply, ignoring");
+      console.log("⏭️  Bot not mentioned in reply, ignoring");
       return;
     }
 
-    console.log("Bot mentioned! Processing...");
+    console.log("✓ Bot mentioned! Processing...");
 
     const originalMessage = ctx.message.reply_to_message;
+    
+    console.log("📝 Original message details:", {
+      originalMessageId: originalMessage?.message_id,
+      originalFrom: originalMessage?.from?.username,
+      originalText: originalMessage?.text?.substring(0, 100) || originalMessage?.caption?.substring(0, 100),
+    });
+
     const postText =
       originalMessage?.text || originalMessage?.caption || null;
 
     if (!postText) {
+      console.log("❌ Original message has no text");
       return ctx.reply("I can only argue against text messages.", {
         reply_parameters: { message_id: ctx.message.message_id },
       });
@@ -101,8 +109,11 @@ export function createBot(token: string): Bot {
       // Send a "typing" indicator while we wait for OpenAI
       await ctx.replyWithChatAction("typing");
 
+      console.log("🤖 Generating AI response for:", postText.substring(0, 100));
       const systemPrompt = getSystemPrompt();
       const oppositeReply = await generateOppositeReply(systemPrompt, postText);
+
+      console.log("💬 Generated reply (first 100 chars):", oppositeReply.substring(0, 100));
 
       // Reply to the ORIGINAL post (not to the user who tagged us)
       await ctx.reply(oppositeReply, {
@@ -111,9 +122,9 @@ export function createBot(token: string): Bot {
         },
       });
       
-      console.log("Successfully sent reply");
+      console.log("✅ Successfully sent reply to message", originalMessage!.message_id);
     } catch (error) {
-      console.error("Failed to generate reply:", error);
+      console.error("❌ Failed to generate reply:", error);
       await ctx.reply("Something went wrong while generating a response.", {
         reply_parameters: { message_id: ctx.message.message_id },
       });
@@ -127,7 +138,7 @@ export function createBot(token: string): Bot {
 
 /**
  * Check if the current message is a reply to another message
- * AND mentions the bot by @username in the message entities.
+ * AND mentions the bot by @username in the message entities or text.
  */
 function isBotMentionedInReply(ctx: Context): boolean {
   const msg = ctx.message;
@@ -145,27 +156,39 @@ function isBotMentionedInReply(ctx: Context): boolean {
     entityTypes: entities.map((e) => e.type),
   });
 
+  // Method 1: Check entities
   for (const entity of entities) {
     // Check for @mention (e.g. @BotUsername)
     if (entity.type === "mention" && text) {
       const mentionText = text
         .slice(entity.offset, entity.offset + entity.length)
         .toLowerCase();
-      console.log("Found mention:", mentionText);
+      console.log("Found mention entity:", mentionText);
       if (mentionText === `@${botUsername}`) {
+        console.log("✓ Bot mentioned via mention entity");
         return true;
       }
     }
 
     // Check for text_mention (clickable user mention)
     if (entity.type === "text_mention" && entity.user) {
-      console.log("Found text_mention:", entity.user.username);
+      console.log("Found text_mention entity:", entity.user.username);
       if (entity.user.username?.toLowerCase() === botUsername) {
+        console.log("✓ Bot mentioned via text_mention entity");
         return true;
       }
     }
   }
 
+  // Method 2: Fallback - check text directly for @username
+  // This handles cases where Telegram client doesn't properly set entity type
+  const mentionPattern = `@${botUsername}`;
+  if (text.toLowerCase().includes(mentionPattern)) {
+    console.log("✓ Bot mentioned in text (fallback check):", mentionPattern);
+    return true;
+  }
+
+  console.log("✗ Bot not mentioned");
   return false;
 }
 
