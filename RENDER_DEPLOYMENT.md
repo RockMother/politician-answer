@@ -104,28 +104,58 @@ Visit `https://your-app.onrender.com/` - should see "OK"
 
 ## Troubleshooting 409 Errors
 
-The code now automatically:
+### Understanding 409 Conflicts
+
+The `409 Conflict` error means multiple instances of the bot are trying to connect to Telegram simultaneously. This is **common and expected** on Render free tier during deploys.
+
+### Automatic Handling
+
+The bot now automatically:
 - Deletes webhook on startup
-- Retries 3 times with 5-second delays
+- Retries up to 10 times with 10-second delays
 - Clears pending updates
+- **Usually resolves itself within 1-2 minutes**
 
-If you still get 409 errors:
+### What you'll see in logs:
 
-1. Make sure **only ONE instance** is running:
-   - Check Render dashboard: Instance Count = 1
-   - Stop any local instances (`npm run dev`)
+**During deploy (NORMAL):**
+```
+⚠ 409 Conflict: Another bot instance is running
+  Waiting 10.0s before retry (9 attempts left)...
+```
+This is expected! Old instance is shutting down while new one starts.
 
-2. Manually check webhook status:
+**Successful recovery:**
+```
+✓ Bot @your_bot is up and running!
+```
+
+### If bot fails to start after 10 retries:
+
+1. **Check if bot is running locally:**
+   ```bash
+   # Stop any local instances
+   pkill -f "node.*politician"
+   ```
+
+2. **Manually check webhook:**
    ```bash
    BOT_TOKEN=your_token npm run bot:status
    ```
 
-3. Force delete webhook:
+3. **Force delete webhook:**
    ```bash
    BOT_TOKEN=your_token npm run bot:delete-webhook
    ```
 
-4. Restart the service on Render
+4. **Restart Render service:**
+   - Go to Render dashboard
+   - Click **Manual Deploy** → **Clear build cache & deploy**
+
+5. **Switch to Background Worker** (eliminates the problem):
+   - On paid plans, use Background Worker instead of Web Service
+   - Set `WORKER_MODE=true` in environment variables
+   - No more multiple instances during deploys!
 
 ---
 

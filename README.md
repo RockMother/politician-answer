@@ -52,6 +52,9 @@ cp .env.example .env
 | `PROMPT_FILE` | No | Path to prompt file (default: `config/prompt.txt`) |
 | `ADMIN_USER_IDS` | No | Comma-separated Telegram user IDs for admin commands |
 | `PORT` | No | Health-check server port (default: `3000`) |
+| `WORKER_MODE` | No | Set to `true` to disable HTTP server (for Background Worker) |
+| `MAX_RETRIES` | No | Max retry attempts for 409 errors (default: `10`) |
+| `RETRY_DELAY_MS` | No | Delay between retries in ms (default: `10000`) |
 
 > **Tip:** To find your Telegram user ID, message [@userinfobot](https://t.me/userinfobot).
 
@@ -119,9 +122,11 @@ Make sure:
 
 ## Troubleshooting
 
-### 409 Conflict Error
+### 409 Conflict Error (Common on Render Free Tier)
 
-If you see `Conflict: terminated by other getUpdates request`, run:
+If you see `Conflict: terminated by other getUpdates request`:
+
+**This is normal during deploys!** The bot automatically retries for ~2 minutes. If it persists:
 
 ```bash
 # Check if webhook is set
@@ -129,9 +134,14 @@ BOT_TOKEN=your_token npm run bot:status
 
 # Delete webhook if it exists
 BOT_TOKEN=your_token npm run bot:delete-webhook
+
+# Stop any local instances
+pkill -f "node.*politician"
 ```
 
-Also make sure the bot is not running locally while it's running on Render.
+**Root cause:** Render free tier may run 2 instances during deploys, and you can't control instance count on free tier. The bot handles this automatically with retry logic.
+
+**Permanent fix:** Use a paid plan with Background Worker (`WORKER_MODE=true`).
 
 For more issues, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed debugging steps.
 
