@@ -11,7 +11,7 @@ async function deleteWebhook(token: string): Promise<void> {
     const response = await fetch(
       `https://api.telegram.org/bot${token}/deleteWebhook?drop_pending_updates=true`
     );
-    const data = await response.json();
+    const data = await response.json() as { ok: boolean; description?: string };
     if (data.ok) {
       console.log("✓ Webhook deleted (if any existed)");
     } else {
