@@ -71,7 +71,21 @@ export function createBot(token: string): Bot {
 
   // ── Main handler: reply + mention → generate opposing argument ────
   bot.on("message", async (ctx) => {
-    if (!isBotMentionedInReply(ctx)) return;
+    console.log("Received message:", {
+      messageId: ctx.message.message_id,
+      chatId: ctx.chat?.id,
+      chatType: ctx.chat?.type,
+      from: ctx.from?.username,
+      text: ctx.message.text?.substring(0, 100),
+      hasReply: !!ctx.message.reply_to_message,
+    });
+
+    if (!isBotMentionedInReply(ctx)) {
+      console.log("Bot not mentioned in reply, ignoring");
+      return;
+    }
+
+    console.log("Bot mentioned! Processing...");
 
     const originalMessage = ctx.message.reply_to_message;
     const postText =
@@ -96,6 +110,8 @@ export function createBot(token: string): Bot {
           message_id: originalMessage!.message_id,
         },
       });
+      
+      console.log("Successfully sent reply");
     } catch (error) {
       console.error("Failed to generate reply:", error);
       await ctx.reply("Something went wrong while generating a response.", {
@@ -118,14 +134,33 @@ function isBotMentionedInReply(ctx: Context): boolean {
   if (!msg || !msg.reply_to_message) return false;
 
   const botUsername = ctx.me.username.toLowerCase();
-  const entities = msg.entities || [];
+  const text = msg.text || msg.caption || "";
+  const entities = msg.entities || msg.caption_entities || [];
+
+  console.log("Checking mention:", {
+    hasReply: !!msg.reply_to_message,
+    botUsername,
+    text,
+    entitiesCount: entities.length,
+    entityTypes: entities.map((e) => e.type),
+  });
 
   for (const entity of entities) {
-    if (entity.type === "mention" && msg.text) {
-      const mentionText = msg.text
+    // Check for @mention (e.g. @BotUsername)
+    if (entity.type === "mention" && text) {
+      const mentionText = text
         .slice(entity.offset, entity.offset + entity.length)
         .toLowerCase();
+      console.log("Found mention:", mentionText);
       if (mentionText === `@${botUsername}`) {
+        return true;
+      }
+    }
+
+    // Check for text_mention (clickable user mention)
+    if (entity.type === "text_mention" && entity.user) {
+      console.log("Found text_mention:", entity.user.username);
+      if (entity.user.username?.toLowerCase() === botUsername) {
         return true;
       }
     }
