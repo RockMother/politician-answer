@@ -56,3 +56,15 @@ export function getAdminUserIds(): number[] {
 export function getPort(): number {
   return parseInt(process.env.PORT || "3000", 10);
 }
+
+export function isBackgroundWorkerMode(): boolean {
+  return process.env.WORKER_MODE === "true" || process.env.WORKER_MODE === "1";
+}
+
+export function getRetryDelay(): number {
+  return parseInt(process.env.RETRY_DELAY_MS || "10000", 10);
+}
+
+export function getMaxRetries(): number {
+  return parseInt(process.env.MAX_RETRIES || "10", 10);
+}

@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "bot:status": "node scripts/check-bot-status.js",
+    "bot:delete-webhook": "node scripts/delete-webhook.js"
   },
   "keywords": [
     "telegram",

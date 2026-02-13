@@ -16,6 +16,17 @@ A Telegram bot that generates strong opposing replies to political messages usin
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather))
 - An OpenAI API key ([platform.openai.com](https://platform.openai.com/api-keys))
 
+### Important: Configure bot for groups
+
+⚠️ **Before adding the bot to a group, disable Privacy Mode:**
+
+1. Open [@BotFather](https://t.me/BotFather)
+2. Send `/mybots`
+3. Select your bot
+4. **Bot Settings** → **Group Privacy** → **Turn off**
+
+Without this, the bot won't see messages in group chats!
+
 ### Install
 
 ```bash
@@ -78,23 +89,51 @@ The system prompt controls how the bot argues. Priority order:
 
 Edit `config/prompt.txt` to change the default prompt without env vars.
 
-## Deploy to Render (free)
+## Deploy to Render
 
-1. Push your code to a GitHub repo.
-2. Go to [render.com](https://render.com) and create a new **Web Service**.
-3. Connect your GitHub repo.
+You can deploy as either **Web Service** (recommended for free tier) or **Background Worker** (paid plans).
+
+### Quick Start (Web Service + Free Tier):
+
+1. Push your code to a GitHub repo
+2. Go to [render.com](https://render.com) and create a new **Web Service**
+3. Connect your GitHub repo
 4. Settings:
    - **Build command:** `npm install && npm run build`
    - **Start command:** `npm start`
    - **Environment:** Node
-5. Add environment variables: `BOT_TOKEN`, `OPENAI_API_KEY`, and any optional ones.
-6. Deploy.
+   - **Instance Type:** Free
+5. Add environment variables: `BOT_TOKEN`, `OPENAI_API_KEY`, etc.
+6. Deploy
+7. Use [UptimeRobot](https://uptimerobot.com) to ping your app every 14 min (keeps it awake)
 
-### Preventing sleep (Render free tier spins down after 15 min)
+For detailed deployment instructions and Background Worker setup, see [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md).
 
-1. Sign up at [UptimeRobot](https://uptimerobot.com) (free).
-2. Add a new HTTP monitor pointing to `https://your-app.onrender.com/` with a 14-minute interval.
-3. This keeps the bot alive by hitting the built-in health-check server.
+## Using the bot in multiple groups
+
+One bot instance can work in **unlimited** groups and channels simultaneously! Just add the bot to any group you want.
+
+Make sure:
+- Privacy Mode is disabled in BotFather (applies to all groups)
+- Only ONE instance of the bot is running (avoid 409 errors)
+
+## Troubleshooting
+
+### 409 Conflict Error
+
+If you see `Conflict: terminated by other getUpdates request`, run:
+
+```bash
+# Check if webhook is set
+BOT_TOKEN=your_token npm run bot:status
+
+# Delete webhook if it exists
+BOT_TOKEN=your_token npm run bot:delete-webhook
+```
+
+Also make sure the bot is not running locally while it's running on Render.
+
+For more issues, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed debugging steps.
 
 ## License
 
